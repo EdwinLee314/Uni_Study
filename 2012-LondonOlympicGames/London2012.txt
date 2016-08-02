@@ -1,0 +1,20 @@
+United States of America 41 26 27 94
+People's Republic of China 37 25 20 82
+Great Britain 26 15 18 59
+Russian Federation 17 21 28 66
+Republic of Korea 13 7 7 27
+Germany 10 18 14 42
+France 9 9 12 30
+Hungary 8 4 4 16
+Australia 7 15 10 32
+Italy 7 6 8 21
+Netherlands 6 5 8 19
+Kazakhstan 6 0 4 10
+Japan 5 14 16 35
+New Zealand 5 3 5 13
+Islamic Republic of Iran 4 5 1 10
+Ukraine 4 2 9 15
+Democratic People's Republic of Korea 4 0 2 6
+Belarus 3 4 4 11
+Jamaica 3 4 3 10
+Cuba 3 3 4 10
