@@ -1,0 +1,419 @@
+AUC01 Add a club
+{
+in:
+	id? : String
+	name? : String
+	phone? : String
+out:
+	NONE
+pre:
+	// id? is new
+	not exists e in clubList | 
+		e.id = id?
+	// name? is new
+	not exists e in clubList | 
+		e.name = name?
+post:
+	//create a new club
+	let e = new Club(id?, name?, and phone?) |
+		e.id = id?
+		e.name = name?
+		e.phone = phone?
+	
+	//add the club to the list of all clubs
+	add e to clubList
+}
+
+AUC02 Add a gymnast
+{
+in: 
+	id? : String
+	name? : String
+	age? : int
+	gender? : char
+	clubId? : string	
+out:
+	NONE
+pre:
+	//club exists 
+	exists c in clubList | c.id = clubId?
+	
+	//id? is new
+	not exists e in gymnastList | e.id = id?
+post:
+	//retrieve club
+	let club = element in clubList | c.id = clubId?
+	
+	//create a new gymnast
+	let e = new Gymnast(id?, name?, age?, gender?, and club) |
+		e.id = id?
+		e.name = name?
+		e.age = age?
+		e.gender = gender?
+		e.club = club
+		
+	//add the gymnast to the list of all gymnasts
+	add e to gymnastList
+}	
+
+AUC03 Add a division
+{
+in:
+	code? : String
+	name? : String
+	gender? : char
+	lowerAgeLimit? : int
+	upperAgeLimit? : int
+out:
+	NONE
+pre:
+	//code? is new
+	not exists e in divisionList | e.code = code?
+	
+	//name? is new 
+	not exists e in divisionList | e.name = name?
+
+	//lowerAgeLimit? < upperAgeLimit?
+	lowerAgeLimit? < upperAgeLimit?
+post:
+	//create a new division
+	let e = new Division(code?, name? ,gender? ,lowerAgeLimit? and upperAgeLimit?) |
+		e.code = code?
+		e.name = name?
+		e.gender = gender?
+		e.lowerAgeLimit = lowerAgeLimit?
+		e.upperAgeLimit = upperAgeLimit?	
+		
+	//add the division to the list of all divisions
+	add e to divisionList
+}
+	
+AUC04 Add an event type
+{
+in:
+	code? : String
+	name? : String
+	menEvent? : boolean
+	womenEvent? : boolean
+out:
+	NONE
+pre:
+	//code? is new
+	not exists e in eventTypeList | e.code = code?
+	
+	//name? is new
+	not exists e in eventTypeList | e.name = name?
+post:
+	//create a new Event type
+	let e = new EventType(code?, name?, menEvent?, womenEvent?) |
+		e.code = code?
+		e.name = name?
+		e.menEvent = menEvent?
+		e.womenEvent = womenEvent?		
+		
+	//add the Event type to the list of all EventTypes
+	add e to eventTypeList
+}
+
+AUC05 Add a judge
+{
+in:
+	id? : String
+	name? : String
+	phone? : String
+	eventTypeCodes? : List<string>
+out:
+	NONE
+pre:
+	//id? is new
+	not exists e in judgeList | e.id = id?
+	//check all eventTypes exist
+	for each p in eventTypeCodes?
+	then
+		exists s in eventTypeList | s.code = p
+	//check all eventTypes code are distinct
+	for each m in eventTypeCodes?
+	then
+		not exists n in eventTypeList |
+			n = p
+post:
+	//retrieve eventTypes
+	for each p in eventTypeCodes?
+	then
+		let s = element in eventTypelist | s.code = p
+		add s to eventTypes
+	//create a new Judge
+	let e = new Judge(id?, name?, phone?,eventTypes) |
+		e.id = id?
+		e.name = name?
+		e.phone = phone?
+		e.eventTypes = eventTypes	
+	//add the judge to the list of all Judges
+	add e to judgeList
+}	
+
+AUC06 Add a meet (and the competitions for the meet)
+{
+in:
+	id? : String
+	name? : String
+	place? : String
+	date? : int
+out:
+	NONE
+pre:
+	//id? is new
+	not exists meet in meetList| meet.id = id?
+	//has more than zero division 
+	let s = list of division in divisionList | 
+		size(s) > 0
+post:
+	//create a new meet
+	let meet = new Meet(id?, name?, place?, date?) |
+		meet.id = id?
+		meet.name = name?
+		meet.place = place?
+		meet.date = date?
+	//add the meet to the list of all meets
+	add meet to meetList	
+	//add competitions for the meet
+	for each division in divisionList do
+	{
+		//create a new Competition
+		let competition = new Competition(meet,division) |
+			competition.meet = meet
+			competition.division = division
+		//add the competition to the list of all competitions
+		add competition to competitionList
+	}
+}
+
+AUC07 Add an event for a competition
+{
+in:
+	meetId? : String
+	divisionCode? : String
+	eventTypeCode? : String
+out:
+	NONE
+pre:
+	//competition exists
+	exists competition on competitionList | 
+		competition.meet.id = meetId?
+		competition.division.code = divisionCode?
+		
+	//eventType exist 
+	exists eventType in eventTypeList | eventType.code = eventTypeCode?
+	
+	//check event is new
+	not exists event on eventList | 
+		event.competition.meet.id = meetId?
+		event.competition.division.code = divisionCode?
+		event.eventType.code = eventTypeCode?
+post:
+	//retrieve competition
+	let competition = element in competitionList |
+		competition.meet.id = meetId?
+		competition.division.code = divisionCode?
+		
+	//retrieve eventType
+	let eventType = element in eventTypeList  | eventType.code = eventTypeCode?
+	
+	//create a new event
+	let e = new Event(competition?, eventType) |
+		e.competition = competition?
+		e.eventType = eventType
+		e.judges = new List<Judge>()
+		
+	//add the event to the list of all events
+	add e to eventList
+}	
+
+AUC08 Assign a judge to an event (in a competition)
+{
+in:
+	judgeId? : String	
+	meetId? : String
+	divisionCode? : String
+	eventTypeCode? : String
+out:
+	NONE
+pre:
+	//judge exists
+	exists judge in judgeList | judge.id = judgeId?
+	
+	//event exists
+	exists event in eventList |
+		event.eventType.code = eventTypeCode?
+		event.competition.meet.id = meetId?
+		event.competition.division.code = divisionCode?
+		
+	//judge not in the event
+	not exists judge in event.judges |
+		judge.id = judgeId?
+post:
+	//retrieve judge
+	let judge = element in judgeList | judge.id = id?
+	
+	//retrieve event
+	let event = element in eventList |
+		event.eventType.code = eventTypeCode?
+		event.competition.meet.id = meetId?
+		event.competition.division.code = divisionCode?
+		
+	//add judge to an event
+	add judge to event.judges
+}
+	
+AUC09 Register a team
+{
+in:
+	clubId? : String
+	meetId? : String
+	divisionCode? : String
+out:
+	NONE
+pre:
+	//club exists
+	exists club in clubList | club.id = clubId?
+	
+	//competition exist
+	exists competition on competitionList | 
+		competition.meet.id = meetId?
+		competition.division.code = divisionCode?
+	
+	//check team is new
+	not exists team on teamList | 
+		team.competition.meet.id = meetId?
+		team.competition.division.code = divisionCode?
+		team.club.id = clubId?
+post:
+	//retrieve club
+	let club = element in clubList | club.id = clubId?
+	
+	//retrieve competition
+	let competition = element in competitionList |
+		competition.meet.id = meetId?
+		competition.division.code = divisionCode?
+		
+	//create a new team
+	let e = new Team(club, competition) |
+		e.club = club
+		e.competition = competiton
+		
+	//add the team to the list of all teams
+	add e to teamList
+}
+	
+AUC10 Register a member for a team
+{
+in:
+	gymnastId? : String
+	divisionCode? : String
+out:
+	NONE
+pre:
+	//gymnast exists 
+	exists gymnast in gymnastList | gymnast.id = gymnastId?
+	
+	//team exists
+	let club =  gymnast.club
+	let clubId = club.id
+	let gender = gymnast.gender
+	let age = gymnast.age
+	exists division = element in divisionList |
+		division.gender = gender
+		division.lowerAgeLimit < age
+		division.upperAgeLimit > age
+	let divisionCode = division.code
+	exists team in teamList | 
+		team.club.id = clubId
+		team.competition.meet.id = meetId?
+		team.competition.division.code = divisionCode
+	
+	//member is new
+	not exists teamMember on teamMemberList | 
+		teamMember.gymnast.id = gymnastId?
+		teamMember.team.competition.meet.id = meetId?
+		teamMember.team.competition.division.code = divisionCode
+		teamMember.team.club.id = clubId
+post:
+	//retrieve gymnast
+	let gymnast = element in gymnastList | gymnast.id = gymnastId?
+	
+	//retrieve team
+	let team = element in teamList | 
+		team.club.id = clubId?
+		team.competition.meet.id = meetId?
+		team.competition.division.code = divisionCode?
+	
+	//cream a new member
+	let e = new Member(gymnast , team) |
+		e.gymnast = gymnast
+		e.team = team
+		
+	//add the member to the list of all members
+	add e to teamMemberList
+}	
+
+AUC11 Enter the score for a gymnast (member of a team) for an event	
+{
+in:
+	gymnastId? : String
+	meetId? : String
+	eventTypeCode? : String
+	value? : double
+out:
+	NONE
+pre:
+	//teamMember exists
+	let gymnast = element in gymnastList | gymnast.id = gymnastId?
+	let club =  gymnast.club
+	let clubId = club.id
+	let gender = gymnast.gender
+	let age = gymnast.age
+	exists division = element in divisionList |
+		division.gender = gender
+		division.lowerAgeLimit < age
+		division.upperAgeLimit > age
+	let divisionCode = division.code
+	exists teamMember in teamMemberList | 
+		teamMember.gymnast.id = gymnastId?
+		teamMember.team.club.id = clubId
+		teamMember.team.competition.meet.id = meetId?
+		teamMember.team.competition.division.code = divisionCode
+		
+	//event exists
+	exists event in eventList |
+		event.eventType.code = eventTypeCode?
+		event.competition.meet.id = meetId?
+		event.competition.division.code = divisionCode
+	
+	//score not exists
+	not exists score in scoreList |
+		score.teamMember.gymnast.id = gymnastId?
+		score.teamMember.team.competition.meet.id = meetId?
+		score.event.eventType.code = eventTypeCode?
+post:
+	//retrieve TeamMember
+	let teamMember = element in teamMemberList |
+		teamMember.gymnast.id = gymnastId?
+		teamMember.team.club.id = clubId?
+		teamMember.team.competition.meet.id = meetId?
+		teamMember.team.competition.division.code = divisionCode? 
+		
+	//retrieve Event
+	let event = element in eventList |
+		event.eventType.code = eventTypeCode?
+		event.competition.meet.id = meetId?
+		event.competition.division.code = divisionCode?
+		
+	//create a new score
+	let e = new Score(teamMember,event, value?) |
+		e.teamMember = teamMember
+		e.event = event
+		e.value = value?
+		
+	//add the score to the list of all scores
+	add e to scoreList
+}
